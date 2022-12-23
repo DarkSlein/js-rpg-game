@@ -16,9 +16,6 @@
  * Follow me on Instagram: @webgirlkristina
  * MIT Licensed
  */
-function inRange(x, min, max) {
-    return x >= min && x <= max; // return ((x-min)*(x-max) <= 0);
-}
 
 	function Scene(screen, controls) {
 		this.canvas = screen.canvas;
@@ -103,14 +100,7 @@ function inRange(x, min, max) {
 		this.ctx.fillStyle = '#ffffff';
 		this.ctx.font="22px Georgia";
 		this.ctx.fillText("You won!",50,70);
-		this.ctx.font="22px Arial";
-		this.ctx.fillText("Press space to continue...",400,600);
-		if(this.controls.states['hit']) {
-			scenes['game'] = new Game(screen, controls);
-			return "game";
-		} else {
-			return "win";
-		}
+		return "win";
 	};
 
 	function Menu(screen, controls) {
@@ -123,14 +113,14 @@ function inRange(x, min, max) {
 
 	Menu.prototype.render = function (time) {
 
-/*	this.ctx.drawImage(this.imgs['title'],
+	this.ctx.drawImage(this.imgs['title'],
 				0,0,1000,640,
-				0,0,1000,640);*/
+				0,0,1000,640);
 
 			this.ctx.fillStyle = '#FFFFFF';
 			this.ctx.font="22px Arial";
-			this.ctx.fillText("Press space to continue...",400,600);
-		if(this.controls.states['hit']) {
+			this.ctx.fillText("Нажмите пробел",250,500);
+		if(this.controls.states['fire']) {
 			return "game";
 		} else {
 			return "menu";
@@ -142,40 +132,28 @@ function inRange(x, min, max) {
 		Scene.apply(this, arguments);
 
 		this.camera = new Camera(0,0,this);
-		this.characters = [];
-
 		this.player = new Player(100,-64,this);
-		this.player.speed = 7;
-		this.player.magic = 100;
-		this.player.maxHealth = 20;
-		this.player.health = 20; // TODO: setHealth
-                this.characters.push(this.player);
+		this.player.maxHealth = 500;
+		this.player.health = 500; // TODO: setHealth
 
+		this.monsters = [];
 		var monster;
 
 		monster = new Player(300,128,this);
 		monster.type = "monster";
 		monster.status = "walking";
 		monster.health = 15;
-		monster.attackDelay = 3;
+		monster.attackDelay = 4;
 		monster.img = "orc";
-                this.characters.push(monster);
+                this.monsters.push(monster);
 
 		monster = new Player(896,128,this);
 		monster.type = "monster";
 		monster.status = "walking";
 		monster.damage1 = 3;
 		monster.speed = 6;
-		monster.attackDelay = 2;
-		monster.hasBow = true;
 		monster.img = "sceleton";
-                this.characters.push(monster);
-
-		monster = new Player(100,896,this);
-		monster.type = "monster";
-		monster.damage1 = -5;
-		monster.img = "player2";
-		this.characters.push(monster);
+                this.monsters.push(monster);
 
 //		this.monster = new Player(300,128,this);  //896,128,this
 //		this.monster.type = "monster";
@@ -275,18 +253,18 @@ function inRange(x, min, max) {
 		this.player.update(time);
 //		this.monster.update(time);
 //		this.monster2.update(time);
-                for (var character of this.characters) {
-			character.update(time);
-			this.ctx.drawImage(this.imgs[character.img], 
-				character.j*64,character.i*64,64,64, (character.x)-this.camera.x,
-				(character.y) - this.camera.y ,64,64);
+                for (i in this.monsters) {
+			this.monsters[i].update(time);
+			this.ctx.drawImage(this.imgs[this.monsters[i].img], 
+				this.monsters[i].j*64,this.monsters[i].i*64,64,64, (this.monsters[i].x)-this.camera.x,
+				(this.monsters[i].y) - this.camera.y ,64,64);
 
-			if (character.status != "dead" || character.type == "player")
-				this.renderHp(character);
+			if (this.monsters[i].status != "dead")
+				this.renderHp(this.monsters[i]);
 		}
 		this.camera.update(time);
 
-//		this.renderHp(this.player);
+		this.renderHp(this.player);
 
 		//render monster
 /* 	this.ctx.drawImage(this.imgs['orc'], this.monster.j*64,this.monster.i*64,64,64, ( this.monster.x )-this.camera.x,(this.monster.y) -
@@ -295,11 +273,11 @@ function inRange(x, min, max) {
 		this.camera.y ,64,64);*/
 
 		//render player
-/*		this.ctx.drawImage(this.imgs['player'], //player
+		this.ctx.drawImage(this.imgs['player'], //player
                     this.player.j*64,this.player.i*64,64,64,
-                          ( this.player.x )-this.camera.x,(this.player.y) - this.camera.y ,64,64);*/
+                          ( this.player.x )-this.camera.x,(this.player.y) - this.camera.y ,64,64);
 
-		// TODO: если монстр мёртв, то сделать из него объект труп?
+
 
 		//render arows
 		for(var  i=this.arrows.length;i>0;i--) {
@@ -317,8 +295,8 @@ function inRange(x, min, max) {
 
 	};
 
-	Game.prototype.renderHp = function (character) { // TODO: maybe it must be rendered another way
-		this.ctx.font="bold 14px Georgia"; // TODO: есть идея высвечивать ещё время текущего бафа
+	Game.prototype.renderHp = function (character) { // TODO: maybe it must be rendered another way; must be static function
+		this.ctx.font="bold 14px Georgia";
 
 		var relativeHealth = character.health/character.maxHealth;
 		if (relativeHealth <= 0.25) // TODO: сделать так, чтобы цвет менялся плавно
@@ -331,12 +309,6 @@ function inRange(x, min, max) {
 			this.ctx.fillStyle = "#55FF55";
 
 		this.ctx.fillText(character.health, character.x-this.camera.x, character.y-this.camera.y);
-
-		if (character.magic == 0)
-			return;
-
-		this.ctx.fillStyle = "#55AAFF";
-		this.ctx.fillText(character.magic, character.x+32-this.camera.x, character.y-this.camera.y);
 	};
 
 	Game.prototype.render = function (time) {
@@ -347,20 +319,18 @@ function inRange(x, min, max) {
 		this.render_sprites(time);
 
 		var deadCount = 0;
-		for (var character of this.characters) {
-			if (character.dead && character.type != "player")
+		for (i in this.monsters) {
+			if (this.monsters[i].dead)
 				deadCount++;
 		}
 
-		if(deadCount >= this.characters.length - 1) {
-			this.ctx.font="22px Georgia";
-			this.ctx.fillStyle = '#55FF55';
-			this.ctx.fillText("You have killed all enemies",50,70);
-			if ((this.player.x > 1152) && (this.player.y > 1100)) {
-				return "win";
+		if((deadCount >= this.monsters.length) &&
+		   (this.player.x > 1152) &&
+			 (this.player.y > 1100)) {
+				 	return "win";
+			 } else {
+					return "game";
 			 }
-		}
-		return "game";
 	};
 
 
@@ -403,15 +373,14 @@ function inRange(x, min, max) {
 	};
 
 
-function Arrow(x,y,direction,scene,master) {
+function Arrow(x,y,direction,scene) {
 	this.active = true;
 	this.x = x;
 	this.y = y;
 	this.scene = scene;
-	this.speed = 20;
+	this.speed = 15;
 	this.damage = 5;
 	this.direction = direction;
-	this.master = master;
 	this.sprites = {
 		right: [10,0],
 		left: [9,0],
@@ -467,18 +436,17 @@ var i = Math.floor(pos_y / 64);
 		return true;
 	}*/
 
-for (var character of this.scene.characters) { // TODO: сделать френдли файер неработающим и по союзникам?
-if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && this.scene.characters[i].team == this.master.team) &&
-   (pos_x > character.x) &&
-   (pos_x < (character.x + 64)) &&
-	 (pos_y > character.y) &&
-	(pos_y < (character.y + 64)) && !(character.status == "dead")) {
-		character.damage(this.damage);
+for (i in this.scene.monsters) {
+if((pos_x > this.scene.monsters[i].x) &&
+   (pos_x < (this.scene.monsters[i].x + 64)) &&
+	 (pos_y > this.scene.monsters[i].y) &&
+	(pos_y < (this.scene.monsters[i].y + 64)) && !(this.scene.monsters[i].status == "dead")) {
+		this.scene.monsters[i].damage(this.damage);
 		return true;
 	}
 }
 
-//	return	!this.scene.tiles[this.scene.map[i][j]].shoot; // TODO: это сломано, надо дебажить
+//	return	!this.scene.tiles[this.scene.map[i][j]].shoot;
 }
 
 	function Player(x,y,scene) {
@@ -497,12 +465,8 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 		this.attackDelay = 3; // задержка атаки ближнего боя
 		this.fireDelay = 3; // задержка атаки дальнего боя
 
-		this.hasBow = false; // TODO: потом сделать инвертарь
-		this.seeEnemy = false; // TODO: move it to ai
-
 		this.health = 10; // TODO: must depend on armor etc., make smth like getHealth
 		this.maxHealth = 10;
-		this.magic = 0;
 		this.damage1 = 5; // TODO; make damage for weapons
 
 		this.speed = 8; // TODO: coef*gameSpeed
@@ -640,15 +604,12 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 					if(this.status == "fire") {
 						this.current_animation_frame = 0;
 						this.set_action(this.direction,"standing");
-						this.scene.arrows.push(new Arrow(this.x,this.y,this.direction,this.scene));
+						this.scene.arrows.push(new Arrow(this.x,this.y,this.direction,this.scene) );
 						this.scene.sounds['arrow'].play();
 					}
 					if(this.status == "attack") {
-						this.set_action(this.direction,"attack"); // TODO: player.hit?
-						var victim = this.findTarget(64); // TODO: убрать hardcode
-						// TODO: сделать отскок
-						if (victim)
-							victim.damage(this.damage1);
+						this.set_action(this.direction,"attack");
+						this.scene.player.damage(this.damage1); // TODO: damage on victim
 						this.scene.sounds['sword'].play();
 					}
 				}
@@ -661,45 +622,15 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 
 	};
 
-	Player.prototype.findTarget = function (distance) { // TODO: сделать возможность бить нескольких врагов? (mode = several or closest)
-		for (var character of this.scene.characters) { // он возвращает не ближайшего, а первого попавшегося
-			if (character == this || character.status == "dead")
-				continue;
-			if (this.direction == "left" && inRange(character.x, this.x - distance, this.x) && // TODO: getPoint and getSquare
-			                                inRange(character.y, this.y - distance/2, this.y + distance/2) ||
-			    this.direction == "right" && inRange(character.x, this.x, this.x + distance) &&
-							 inRange(character.y, this.y - distance/2, this.y + distance/2) ||
-			    this.direction == "up" && inRange(character.y, this.y - distance, this.y) &&
-						      inRange(character.x, this.x - distance/2, this.x + distance/2) ||
-			    this.direction == "down" && inRange(character.y, this.y, this.y + distance) && 
-							inRange(character.x, this.x - distance/2, this.x + distance/2)) {
-				return character;
-			}
-		}
-	}
-
 	Player.prototype.damage = function (damage) {
 		// TODO: pain animation? numbers?
-		if (this.health - damage > this.maxHealth) {
-			this.health = this.maxHealth;
-			return false;
-		}
 		this.health -= damage;
 		if (this.health <= 0) {
 			this.set_action("down","dead");
 		}
-		return true;
 	}
 
-	Player.prototype.takeMagic = function (magic) {
-		if (this.magic - magic < 0) { // TODO: not enough magic
-			return false;
-		}
-		this.magic -= magic;
-		return true;
-	}
-
-	Player.prototype.set_action = function (direction, status) {
+	Player.prototype.set_action = function (direction,status) {
 		if(this.direction != direction) {
 			this.direction = direction;
 			this.change_animation = true;
@@ -713,7 +644,7 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 
 	Player.prototype.is_walkable = function (x,y) {
 
-		if(x < 0 ) { // TODO: либо если конец карты
+		if(x < 0 ) {
 			this.got_obstacle = true;
 			return false;
 		};
@@ -725,12 +656,12 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 		var x1 = x;
 		var x2 = x + 64;
 		var y1 = y;
-		var y2 = y + 64;
+		var y2 = y+64;
 
 		x1 = x1 + 20;
 		x2 = x2 - 20;
-		y1 = y1 + 20;
-		y2 = y2 - 10;
+		y1 = y1 +20;
+		y2 = y2 -10;
 
 		var j1 = Math.floor((x1) / 64);
 		var j2 = Math.floor((x2) / 64);
@@ -747,27 +678,17 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 			}
 		}
 
-		for (var character of this.scene.characters) { // TODO: dirty hack!
-			if (character == this || character.status == "dead") // TODO: || character.type == "ghost" || character.team == this.team
-				continue;
-			if (inRange(x, character.x-20, character.x-20 + 40) &&  // TODO: character.x + character.sizeX
-			    inRange(y, character.y-32, character.y-32 + 64) ) { // TODO: more complex check: проверка на вхождение множеств друг в друга
-				walkable = false;
-			}
-		}
-
 		this.got_obstacle = !walkable;
 		return walkable;
 
 	};
 
-	// TODO: 1 function 'move' only
 	Player.prototype.move_left = function () {
 		this.set_action("left","walking");
 
 		if(this.is_walkable(this.x - this.speed,this.y)) {
 			this.x = this.x - this.speed;
-			if(this.x < 0) { // if player is в пределах карты
+			if(this.x < 0) {
 				this.x = 0;
 			}
 		}
@@ -849,7 +770,6 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 				return this.monster_ai_controll(time);
 			}
 
-			// обработка клавы игрока
 			if(this.scene.controls.states['fire']) {
 				this.fire();
 				return true;
@@ -875,20 +795,6 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 				return true;
 			}
 
-			if(this.scene.controls.states['hit']) {
-				this.attack();
-				return true;
-			}
-
-			if(this.scene.controls.states['x']) { // magic test
-				if (this.health >= this.maxHealth)
-					return true;
-				this.damage(-5);
-				this.takeMagic(5);
-				this.scene.controls.states['x'] = false; // костыль?
-				return true;
-			}
-
 			if(this.scene.controls.states['magic1']) {
 				this.fireball();
 				return true;
@@ -899,20 +805,12 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 
 	}
 
-	Player.prototype.isInRange = function (character, range) { // returns side
-		var deltaX = this.x - character.x;
-		var deltaY = this.y - character.y;
-
-//		if ()
-	}
-
 	Player.prototype.monster_ai_controll = function (time) {
-		// attack
-		if(!this.scene.player.dead &&
-			(this.scene.player.x - this.x < 64 && // TODO: поменять в inRange
-   			this.x - this.scene.player.x < 64 &&
-   			this.scene.player.y - this.y < 64 &&
-   			this.y - this.scene.player.y < 64)) {
+		if((this.scene.player.dead == false) &&
+			(this.scene.player.x < this.x + 64 &&
+   			this.scene.player.x + 64 > this.x &&
+   			this.scene.player.y < this.y + 64 &&
+   			64 + this.scene.player.y > this.y)) {
 //			(time - this.attackTime) > this.attackDelay) {
 		  //тактический прыжок
 /*			if(this.x > this.scene.player.x) {
@@ -924,73 +822,15 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 				this.y = this.scene.player.y;
 				this.x = this.scene.player.x - 32;
 			}*/
-
-			// повернуться в сторону врага
-			this.attack();
+			this.attack(); // проигрывает анимацию
+			this.attackTime = time;
 //			this.scene.sounds['sword'].play();			
 //			this.scene.player.damage(5);
 			return true;
 		}
 
-		// chase (make for each enemy, not player only)
-		// если враг в зоне видимости непися и есть к нему путь, то включается режим seeEnemy, если далеко, то выключается
-		var madePass = false;
-		if(!this.scene.player.dead && 0 != 0) { // deprecated
-			var deltaX = this.x - this.scene.player.x;
-			var deltaY = this.y - this.scene.player.y;
 
-			if (deltaX < 64*4 && deltaX > 0) {
-				this.move_left();
-
-				if (deltaY < 64*4 && deltaY > 0) {
-					this.move_up();
-				} else if (deltaY > -64*2 && deltaY < 0) {
-					this.move_down();
-				}
-				/*if (!this.got_obstacle)*/ madePass = true;
-			} else if (deltaX > -64*4 && deltaX < 0) {
-				this.move_right();
-
-				if (deltaY < 64*4 && deltaY > 0) {
-					this.move_up();
-				} else if (deltaY > -64*4 && deltaY < 0) {
-					this.move_down();
-				}
-				/*if (!this.got_obstacle)*/ madePass = true;
-			}
-/*			if (deltaY < 64*4 && deltaY > 0) {
-				this.move_up();
-				madePass = true;
-			} else if (deltaY > -64*4 && deltaY < 0) {
-				this.move_down();
-				madePass = true;
-			}*/
-
-		}
-
-		// shoot (if has shooting weapon)
-		// TODO: IsCloseTo(character, range); make it for any enemy not player only
-		if (this.scene.player.status != "dead" && this.hasBow) {
-			if (Math.floor(this.scene.player.y/32) == Math.floor(this.y/32) && this.scene.player.x < this.x) {
-				this.direction = "left";
-				this.current_action = this.fire;
-			} else if (Math.floor(this.scene.player.y/32) == Math.floor(this.y/32) && this.scene.player.x > this.x) {
-				this.direction = "right";
-				this.current_action = this.fire;
-			} else if (Math.floor(this.scene.player.x/32) == Math.floor(this.x/32) && this.scene.player.y < this.y) {
-				this.direction = "up";
-				this.current_action = this.fire;
-			} else if (Math.floor(this.scene.player.x/32) == Math.floor(this.x/32) && this.scene.player.y > this.y) {
-				this.direction = "down";
-				this.current_action = this.fire;
-			}
-		}
-
-		// wander
-/*		if (madePass) {
-			return true;		
-		}*/
-		if((this.got_obstacle) || ((time - this.lastTime) > 500 ) && !madePass) {// если seeEnemy, то this.fight(enemy), которая отвечает за преследование либо убегаение, в зависимости от характеристик врага; в противном случае движения зависят от поведение (random, stand и т.д.)
+		if((this.got_obstacle) || ((time - this.lastTime) > 500 )) {
 			var actions = [this.move_left,this.move_right,this.move_up,this.move_down,this.standing];
 			this.current_action = actions[Math.floor(Math.random() * actions.length)];
 			this.lastTime = time;
@@ -1019,9 +859,9 @@ if(//this.master != this.scene.characters[i] && (!this.scene.friendlyFire && thi
 		this.sound.pause();
 	};
 
-	function Controls() { // TODO: сделать кнопки настраиваемыми в меню
-        this.codes  = { 37: 'left', 39: 'right', 38: 'forward', 40: 'backward', 17: 'fire', 32: 'hit', 88: 'x'};
-        this.states = { 'left': false, 'right': false, 'forward': false, 'backward': false, 'fire' : false, 'hit' : false, 'x' : false};
+	function Controls() {
+        this.codes  = { 37: 'left', 39: 'right', 38: 'forward', 40: 'backward', 32: 'fire' };
+        this.states = { 'left': false, 'right': false, 'forward': false, 'backward': false, 'fire' : false };
         document.addEventListener('keydown', this.onKey.bind(this, true), false);
         document.addEventListener('keyup', this.onKey.bind(this, false), false);
      }
